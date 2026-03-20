@@ -7,7 +7,7 @@ import { auth } from '@/lib/firebase';
 import Link from 'next/link';
 import { ArrowLeft, CreditCard, Loader2 } from 'lucide-react';
 
-const CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_PAYMENTS_CLIENT_KEY || '';
+const CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_WIDGET_ID || '';
 
 const PAYMENT_METHODS = [
   { id: 'CARD', name: '카드 결제', icon: '💳', desc: '신용/체크카드' },

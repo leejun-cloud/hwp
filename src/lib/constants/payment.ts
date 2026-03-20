@@ -1,6 +1,6 @@
 export const TOSS_PAYMENTS_CONFIG = {
-  clientKey: process.env.NEXT_PUBLIC_TOSS_PAYMENTS_CLIENT_KEY || '',
-  secretKey: process.env.TOSS_PAYMENTS_SECRET_KEY || '',
+  clientKey: process.env.NEXT_PUBLIC_TOSS_WIDGET_ID || '',
+  secretKey: process.env.TOSS_SECRET_KEY || '',
   apiBaseUrl: 'https://api.tosspayments.com/v1',
   successUrl: '/checkout/success',
   failUrl: '/checkout/fail',
