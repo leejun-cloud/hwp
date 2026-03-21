@@ -50,7 +50,11 @@ export default function LoginPage() {
       router.push('/dashboard');
     } catch (err: unknown) {
       const code = (err as { code?: string }).code;
-      if (code === 'auth/wrong-password' || code === 'auth/user-not-found') {
+      if (
+        code === 'auth/invalid-credential' ||
+        code === 'auth/wrong-password' ||
+        code === 'auth/user-not-found'
+      ) {
         setError('이메일 또는 비밀번호가 올바르지 않습니다.');
       } else if (code === 'auth/email-already-in-use') {
         setError('이미 사용 중인 이메일입니다.');
