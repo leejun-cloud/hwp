@@ -40,6 +40,8 @@ export default function DashboardPage() {
   const [verses, setVerses] = useState(['', '', '', '', '']);
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState(false);
+  const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [downloadName, setDownloadName] = useState('');
 
   useEffect(() => {
     return onAuthStateChanged(auth, (u) => {
@@ -75,9 +77,25 @@ export default function DashboardPage() {
       return;
     }
     setGenerating(true);
-    await new Promise(r => setTimeout(r, 2000));
-    setGenerating(false);
-    setGenerated(true);
+    try {
+      const res = await fetch('/api/generate-bulletin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ verses }),
+      });
+      if (!res.ok) throw new Error('생성 실패');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const disposition = res.headers.get('Content-Disposition') || '';
+      const nameMatch = disposition.match(/filename="(.+)"/);
+      setDownloadUrl(url);
+      setDownloadName(nameMatch?.[1] || '가정예배주보.docx');
+      setGenerated(true);
+    } catch {
+      alert('주보 생성에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setGenerating(false);
+    }
   };
 
   const scrollTo = (id: string) => {
@@ -237,13 +255,24 @@ export default function DashboardPage() {
                   <p className="font-semibold text-gray-800 mb-1">주보가 생성됐습니다!</p>
                   <p className="text-gray-400 text-sm mb-5">AI가 완성된 가정예배 주보를 만들었습니다.</p>
                   <div className="flex gap-3 justify-center">
-                    <button className="bg-purple-600 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-purple-700 transition-colors flex items-center gap-2">
-                      <BookOpen className="w-4 h-4" /> 미리보기
-                    </button>
-                    <button className="border border-gray-200 text-gray-700 px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors">
-                      다운로드 (.hwpx)
-                    </button>
-                    <button onClick={() => { setGenerated(false); setVerses(['', '', '', '', '']); }} className="text-gray-400 hover:text-gray-600 text-sm">
+                    {downloadUrl && (
+                      <a
+                        href={downloadUrl}
+                        download={downloadName}
+                        className="bg-purple-600 text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-purple-700 transition-colors flex items-center gap-2"
+                      >
+                        <BookOpen className="w-4 h-4" /> 다운로드 (.docx)
+                      </a>
+                    )}
+                    <button
+                      onClick={() => {
+                        setGenerated(false);
+                        setVerses(['', '', '', '', '']);
+                        if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+                        setDownloadUrl(null);
+                      }}
+                      className="border border-gray-200 text-gray-700 px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50 transition-colors"
+                    >
                       다시 만들기
                     </button>
                   </div>
