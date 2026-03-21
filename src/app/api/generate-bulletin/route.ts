@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
 
   // Claude로 주보 내용 생성
   const message = await client.messages.create({
-    model: 'claude-sonnet-4-6',
+    model: 'claude-3-5-sonnet-20241022',
     max_tokens: 2048,
     messages: [
       {
