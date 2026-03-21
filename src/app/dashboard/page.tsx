@@ -43,6 +43,17 @@ export default function DashboardPage() {
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [downloadName, setDownloadName] = useState('');
 
+  // AI 분석 상태
+  const [analyzing, setAnalyzing] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState<{
+    summary: string;
+    document_type: string;
+    key_points: string[];
+    fill_suggestions: string[];
+    word_count?: string;
+    tone: string;
+  } | null>(null);
+
   useEffect(() => {
     return onAuthStateChanged(auth, (u) => {
       if (!u) router.push('/login');
@@ -95,6 +106,27 @@ export default function DashboardPage() {
       alert('주보 생성에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleAnalyze = async () => {
+    if (!uploadedFile) return;
+    setAnalyzing(true);
+    setAnalysisResult(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', uploadedFile);
+      const res = await fetch('/api/analyze-document', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!res.ok) throw new Error('분석 실패');
+      const data = await res.json();
+      setAnalysisResult(data);
+    } catch {
+      alert('문서 분석에 실패했습니다. 다시 시도해주세요.');
+    } finally {
+      setAnalyzing(false);
     }
   };
 
@@ -206,8 +238,16 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors">
-                      AI 분석 시작
+                    <button
+                      onClick={handleAnalyze}
+                      disabled={analyzing}
+                      className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                    >
+                      {analyzing ? (
+                        <><div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" /> 분석 중...</>
+                      ) : (
+                        <><Sparkles className="w-3.5 h-3.5" /> AI 분석 시작</>
+                      )}
                     </button>
                     <button onClick={() => setUploadedFile(null)} className="text-gray-400 hover:text-red-500 transition-colors">
                       <X className="w-5 h-5" />
@@ -238,6 +278,60 @@ export default function DashboardPage() {
                 </div>
               )}
             </motion.div>
+
+            {/* AI 분석 결과 */}
+            {analysisResult && (
+              <motion.div
+                initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+                className="bg-white rounded-2xl border border-blue-100 p-6"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-blue-500" /> AI 분석 결과
+                  </h2>
+                  <span className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-full font-medium">
+                    {analysisResult.document_type}
+                  </span>
+                </div>
+
+                <p className="text-sm text-gray-600 mb-4 leading-relaxed">{analysisResult.summary}</p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gray-50 rounded-xl p-4">
+                    <p className="text-xs font-semibold text-gray-500 mb-2 uppercase tracking-wide">핵심 내용</p>
+                    <ul className="space-y-1.5">
+                      {analysisResult.key_points.map((point, i) => (
+                        <li key={i} className="text-sm text-gray-700 flex items-start gap-2">
+                          <span className="text-blue-400 mt-0.5">•</span> {point}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="bg-purple-50 rounded-xl p-4">
+                    <p className="text-xs font-semibold text-purple-500 mb-2 uppercase tracking-wide">AI 채우기 제안</p>
+                    <ul className="space-y-1.5">
+                      {analysisResult.fill_suggestions.map((s, i) => (
+                        <li key={i} className="text-sm text-purple-800 flex items-start gap-2">
+                          <span className="mt-0.5">✦</span> {s}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="flex gap-4 mt-4 text-xs text-gray-400">
+                  {analysisResult.word_count && <span>단어 수: {analysisResult.word_count}</span>}
+                  <span>톤: {analysisResult.tone}</span>
+                </div>
+
+                <button
+                  onClick={() => { setAnalysisResult(null); setUploadedFile(null); }}
+                  className="mt-4 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  닫기
+                </button>
+              </motion.div>
+            )}
 
             {/* 가정예배 주보 생성 */}
             <motion.div
